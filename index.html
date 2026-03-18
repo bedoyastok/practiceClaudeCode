@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>To-Do List</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 48px 16px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      width: 100%;
+      max-width: 520px;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      padding: 32px 32px 24px;
+      color: #fff;
+    }
+    .header h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.5px; }
+    .header p  { font-size: 0.9rem; opacity: 0.8; margin-top: 4px; }
+
+    .stats {
+      display: flex;
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .stat {
+      background: rgba(255,255,255,0.2);
+      border-radius: 10px;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      backdrop-filter: blur(4px);
+    }
+    .stat span { font-weight: 700; font-size: 1.1rem; display: block; }
+
+    /* ── Input area ── */
+    .input-area {
+      padding: 24px 32px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      gap: 10px;
+    }
+    .input-area input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e8e8e8;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-area input:focus { border-color: #667eea; }
+    .input-area button {
+      padding: 12px 20px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.3rem;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      line-height: 1;
+    }
+    .input-area button:hover  { transform: scale(1.08); box-shadow: 0 4px 14px rgba(102,126,234,0.5); }
+    .input-area button:active { transform: scale(0.96); }
+
+    /* ── Filter tabs ── */
+    .filters {
+      display: flex;
+      gap: 6px;
+      padding: 16px 32px 0;
+    }
+    .filters button {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: #f4f4f8;
+      color: #888;
+      transition: all 0.2s;
+    }
+    .filters button.active {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+    }
+
+    /* ── Task list ── */
+    #task-list {
+      padding: 16px 32px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 80px;
+    }
+
+    .empty {
+      text-align: center;
+      color: #bbb;
+      font-size: 0.95rem;
+      padding: 32px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .empty .icon { font-size: 2.5rem; }
+
+    /* ── Task item ── */
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #fafafa;
+      border: 1px solid #ebebeb;
+      border-radius: 14px;
+      padding: 14px 16px;
+      animation: slideIn 0.25s ease;
+      transition: box-shadow 0.2s, opacity 0.2s, transform 0.2s;
+    }
+    .task-item:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+    .task-item.done  { opacity: 0.55; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeOut {
+      to { opacity: 0; transform: translateX(30px); }
+    }
+    .task-item.removing { animation: fadeOut 0.25s ease forwards; }
+
+    /* Checkbox */
+    .check-btn {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      border: 2px solid #d0d0d0;
+      background: #fff;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem;
+      transition: all 0.2s;
+    }
+    .task-item.done .check-btn {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-color: transparent;
+      color: #fff;
+    }
+    .check-btn:hover { transform: scale(1.15); }
+
+    /* Text */
+    .task-text {
+      flex: 1;
+      font-size: 0.95rem;
+      color: #333;
+      word-break: break-word;
+      transition: color 0.2s;
+    }
+    .task-item.done .task-text {
+      text-decoration: line-through;
+      color: #aaa;
+    }
+
+    /* Delete button */
+    .del-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      color: #ccc;
+      padding: 4px;
+      border-radius: 8px;
+      transition: color 0.2s, background 0.2s;
+      flex-shrink: 0;
+    }
+    .del-btn:hover { color: #e05050; background: #ffeaea; }
+
+    /* ── Clear completed ── */
+    .footer {
+      padding: 0 32px 24px;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .clear-btn {
+      background: none;
+      border: none;
+      font-size: 0.82rem;
+      color: #bbb;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .clear-btn:hover { color: #e05050; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header">
+    <h1>📝 Mis Tareas</h1>
+    <p>Organiza tu día con estilo</p>
+    <div class="stats">
+      <div class="stat"><span id="count-pending">0</span>Pendientes</div>
+      <div class="stat"><span id="count-done">0</span>Completadas</div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <input id="new-task" type="text" placeholder="Escribe una nueva tarea…" maxlength="120" />
+    <button id="add-btn" title="Agregar">＋</button>
+  </div>
+
+  <div class="filters">
+    <button class="active" data-filter="all">Todas</button>
+    <button data-filter="pending">Pendientes</button>
+    <button data-filter="done">Completadas</button>
+  </div>
+
+  <div id="task-list"></div>
+
+  <div class="footer">
+    <button class="clear-btn" id="clear-done">Limpiar completadas</button>
+  </div>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────
+  let tasks  = JSON.parse(localStorage.getItem('tasks') || '[]');
+  let filter = 'all';
+
+  function save() {
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+  }
+
+  // ── Render ─────────────────────────────────────────────
+  function render() {
+    const list = document.getElementById('task-list');
+    const visible = tasks.filter(t =>
+      filter === 'all'     ? true :
+      filter === 'pending' ? !t.done :
+                              t.done
+    );
+
+    list.innerHTML = '';
+
+    if (visible.length === 0) {
+      list.innerHTML = `
+        <div class="empty">
+          <span class="icon">${filter === 'done' ? '🎉' : '🗒️'}</span>
+          ${filter === 'done' ? 'Aún no completaste ninguna tarea.'
+          : filter === 'pending' ? '¡Todo listo! No hay pendientes.'
+          : 'Agrega tu primera tarea arriba.'}
+        </div>`;
+    } else {
+      visible.forEach(t => {
+        const el = document.createElement('div');
+        el.className = 'task-item' + (t.done ? ' done' : '');
+        el.dataset.id = t.id;
+        el.innerHTML = `
+          <button class="check-btn" title="Marcar">${t.done ? '✓' : ''}</button>
+          <span class="task-text">${escHtml(t.text)}</span>
+          <button class="del-btn" title="Eliminar">🗑</button>`;
+
+        el.querySelector('.check-btn').addEventListener('click', () => toggleDone(t.id));
+        el.querySelector('.del-btn').addEventListener('click', () => removeTask(t.id, el));
+        list.appendChild(el);
+      });
+    }
+
+    // stats
+    document.getElementById('count-pending').textContent = tasks.filter(t => !t.done).length;
+    document.getElementById('count-done').textContent    = tasks.filter(t =>  t.done).length;
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Actions ────────────────────────────────────────────
+  function addTask() {
+    const input = document.getElementById('new-task');
+    const text  = input.value.trim();
+    if (!text) { input.focus(); return; }
+    tasks.unshift({ id: Date.now(), text, done: false });
+    save();
+    render();
+    input.value = '';
+    input.focus();
+  }
+
+  function toggleDone(id) {
+    const t = tasks.find(t => t.id === id);
+    if (t) { t.done = !t.done; save(); render(); }
+  }
+
+  function removeTask(id, el) {
+    el.classList.add('removing');
+    el.addEventListener('animationend', () => {
+      tasks = tasks.filter(t => t.id !== id);
+      save();
+      render();
+    }, { once: true });
+  }
+
+  function clearDone() {
+    tasks = tasks.filter(t => !t.done);
+    save();
+    render();
+  }
+
+  // ── Events ─────────────────────────────────────────────
+  document.getElementById('add-btn').addEventListener('click', addTask);
+  document.getElementById('new-task').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addTask();
+  });
+  document.getElementById('clear-done').addEventListener('click', clearDone);
+
+  document.querySelectorAll('.filters button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      filter = btn.dataset.filter;
+      document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    });
+  });
+
+  // ── Init ───────────────────────────────────────────────
+  render();
+</script>
+</body>
+</html>
